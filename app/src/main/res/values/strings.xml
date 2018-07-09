@@ -5,4 +5,12 @@
   <string name="navigation_drawer_close">Close navigation drawer</string>
 
   <string name="action_settings">Settings</string>
+  <string name="sign_in_button">Sign In</string>
+  <string name="welcome_message">Welcome to\n Sheet Music!</string>
+  <string name="create_account_button">Create Account</string>
+  <string name="nav_home">Home</string>
+  <string name="nav_record">Record</string>
+  <string name="nav_convert">Convert to Sheet Music</string>
+  <string name="record_button">Record</string>
+
 </resources>
