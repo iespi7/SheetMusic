@@ -1,19 +1,14 @@
 package com.iespinozatech.mus.sheetmusic;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.media.MediaRecorder;
-import android.media.MediaRecorder.AudioEncoder;
-import android.media.MediaRecorder.OutputFormat;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.widget.AppCompatButton;
-import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -21,26 +16,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Button;
 import com.iespinozatech.mus.sheetmusic.view.ConvertFragment;
 import com.iespinozatech.mus.sheetmusic.view.HomeFragment;
 import com.iespinozatech.mus.sheetmusic.view.RecordingFragment;
-import java.io.IOException;
+import retrofit2.Retrofit;
+import retrofit2.converter.simplexml.SimpleXmlConverterFactory;
 
 
 public class MainActivity extends AppCompatActivity
     implements NavigationView.OnNavigationItemSelectedListener {
 
-  private static final String LOG_TAG = "AudioRecord";
-  private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
-  private static String FileName = null;
-
-
-  private MediaRecorder Recorder = null;
-
   private boolean permissionToRecordAccepted = false;
-  private String [] permissions ={Manifest.permission.RECORD_AUDIO};
 
+  private static final int REQUEST_ALL_PERMISSION = 1000;
+  private String [] permissions ={
+      Manifest.permission.RECORD_AUDIO,
+      Manifest.permission.WRITE_EXTERNAL_STORAGE,
+      Manifest.permission.READ_EXTERNAL_STORAGE,
+      Manifest.permission.INTERNET
+  };
+
+  Retrofit retrofit = new Retrofit.Builder()
+      .baseUrl("https://api.sonicAPI.com")
+      .addConverterFactory(SimpleXmlConverterFactory.create())
+      .build();
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -57,7 +56,32 @@ public class MainActivity extends AppCompatActivity
 
     NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
     navigationView.setNavigationItemSelectedListener(this);
+
+    checkPermissions();
+
     displaySelectedScreen(R.id.nav_home);
+
+  }
+
+  private void checkPermissions() {
+    boolean needPermission = false;
+    boolean needRationale = false;
+    for (String permission : permissions) {
+      needPermission |= ContextCompat.checkSelfPermission(
+          this, permission) != PackageManager.PERMISSION_GRANTED;
+      needRationale |= ActivityCompat.shouldShowRequestPermissionRationale(
+          this, permission);
+    }
+    if (needPermission) {
+      if (needRationale) {
+        // Show an explanation to the user *asynchronously* -- don't block
+        // this thread waiting for the user's response! After the user
+        // sees the explanation, try again to request the permission.
+      } else {
+        // No explanation needed; request the permission
+        ActivityCompat.requestPermissions(this, permissions, REQUEST_ALL_PERMISSION);
+      }
+    }
   }
 
   @Override
@@ -121,7 +145,7 @@ public class MainActivity extends AppCompatActivity
       ft.commit();
     }
 
-    DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+    DrawerLayout drawer =  findViewById(R.id.drawer_layout);
     drawer.closeDrawer(GravityCompat.START);
   }
 
@@ -129,62 +153,18 @@ public class MainActivity extends AppCompatActivity
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
       @NonNull int [] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    switch (requestCode){
-      case REQUEST_RECORD_AUDIO_PERMISSION : permissionToRecordAccepted =
-          grantResults[0] == PackageManager.PERMISSION_GRANTED;
-        break;
-    }
-    if (!permissionToRecordAccepted) finish();
-
-  }
-
-  private void onRecord (boolean start) {
-    if (start) {
-      startRecording();
-    } else {
-      stopRecording();
-    }
-  }
-
-  private void startRecording() {
-    Recorder = new MediaRecorder();
-    Recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-    Recorder.setOutputFormat(OutputFormat.THREE_GPP);
-    Recorder.setOutputFile(FileName);
-    Recorder.setAudioEncoder(AudioEncoder.AMR_NB);
-
-    try {
-      Recorder.prepare();
-    }catch (IOException e) {
-      Log.e(LOG_TAG, "prepare() failed");
-    }
-    Recorder.start();
-  }
-
-  private void stopRecording() {
-    Recorder.stop();
-    Recorder.release();
-    Recorder = null;
-  }
-
-  class RecordButton extends AppCompatButton {
-    boolean StartRecording = true;
-
-    OnClickListener clicker = new OnClickListener() {
-      public void onClick(View v) {
-        onRecord(StartRecording);
-        if(StartRecording) {
-
-        } else {
-
-        }
-        StartRecording = !StartRecording;
+    if (requestCode == REQUEST_ALL_PERMISSION) {
+      if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+        finish();
       }
-    };
-
-    public RecordButton(Context context) {
-      super (context);
-      setOnClickListener(clicker);
     }
   }
+
+
+  @Override
+  public void onSaveInstanceState(@NonNull Bundle outState) {
+    super.onSaveInstanceState(outState);
+  }
+
+
 }

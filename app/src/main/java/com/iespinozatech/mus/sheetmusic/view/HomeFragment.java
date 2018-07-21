@@ -6,6 +6,8 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.SignInButton;
 import com.iespinozatech.mus.sheetmusic.R;
 
 
@@ -22,6 +24,12 @@ public class HomeFragment extends Fragment{
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
       super.onViewCreated(view, savedInstanceState);
       //you can set the title for your toolbar here for different fragments different titles
-      getActivity().setTitle("HomeFragment");
+      getActivity().  setTitle("Login");
+
+
+
+      GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+          .requestEmail()
+          .build();
     }
 }

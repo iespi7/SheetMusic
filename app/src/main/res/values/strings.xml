@@ -12,5 +12,10 @@
   <string name="nav_record">Record</string>
   <string name="nav_convert">Convert to Sheet Music</string>
   <string name="record_button">Record</string>
+  <string name="play_button">Play</string>
+  <string name="stop_button">Stop</string>
+  <string name="erase_button">Delete</string>
+  <string name="raw_filename_format">%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.raw</string>
+  <string name="wav_filename_format">%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.wav</string>
 
 </resources>
