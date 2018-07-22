@@ -4,7 +4,7 @@
   <string name="navigation_drawer_open">Open navigation drawer</string>
   <string name="navigation_drawer_close">Close navigation drawer</string>
 
-  <string name="action_settings">Settings</string>
+  <string name="action_logout">Log Out</string>
   <string name="sign_in_button">Sign In</string>
   <string name="welcome_message">Welcome to\n Sheet Music!</string>
   <string name="create_account_button">Create Account</string>
@@ -17,5 +17,6 @@
   <string name="erase_button">Delete</string>
   <string name="raw_filename_format">%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.raw</string>
   <string name="wav_filename_format">%1$tY%1$tm%1$td%1$tH%1$tM%1$tS.wav</string>
+  <string name="recording_display">%1$s (%2$02d:%3$02d)</string>
 
 </resources>

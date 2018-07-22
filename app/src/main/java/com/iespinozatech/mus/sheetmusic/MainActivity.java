@@ -1,6 +1,7 @@
 package com.iespinozatech.mus.sheetmusic;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,6 +17,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.iespinozatech.mus.sheetmusic.view.ConvertFragment;
 import com.iespinozatech.mus.sheetmusic.view.HomeFragment;
 import com.iespinozatech.mus.sheetmusic.view.RecordingFragment;
@@ -26,27 +29,22 @@ import retrofit2.converter.simplexml.SimpleXmlConverterFactory;
 public class MainActivity extends AppCompatActivity
     implements NavigationView.OnNavigationItemSelectedListener {
 
-  private boolean permissionToRecordAccepted = false;
 
   private static final int REQUEST_ALL_PERMISSION = 1000;
-  private String [] permissions ={
+  private String[] permissions = {
       Manifest.permission.RECORD_AUDIO,
       Manifest.permission.WRITE_EXTERNAL_STORAGE,
       Manifest.permission.READ_EXTERNAL_STORAGE,
       Manifest.permission.INTERNET
   };
 
-  Retrofit retrofit = new Retrofit.Builder()
-      .baseUrl("https://api.sonicAPI.com")
-      .addConverterFactory(SimpleXmlConverterFactory.create())
-      .build();
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
-
 
     DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
     ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -103,17 +101,14 @@ public class MainActivity extends AppCompatActivity
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
-    // Handle action bar item clicks here. The action bar will
-    // automatically handle clicks on the HomeFragment/Up button, so long
-    // as you specify a parent activity in AndroidManifest.xml.
-    int id = item.getItemId();
-
-    //noinspection SimplifiableIfStatement
-    if (id == R.id.action_settings) {
-      return true;
+    switch (item.getItemId()) {
+      case R.id.action_logout:
+        SignOut();
+        return true;
+      default:
+        return super.onOptionsItemSelected(item);
     }
 
-    return super.onOptionsItemSelected(item);
   }
 
   @SuppressWarnings("StatementWithEmptyBody")
@@ -145,13 +140,13 @@ public class MainActivity extends AppCompatActivity
       ft.commit();
     }
 
-    DrawerLayout drawer =  findViewById(R.id.drawer_layout);
+    DrawerLayout drawer = findViewById(R.id.drawer_layout);
     drawer.closeDrawer(GravityCompat.START);
   }
 
   @Override
   public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-      @NonNull int [] grantResults) {
+      @NonNull int[] grantResults) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     if (requestCode == REQUEST_ALL_PERMISSION) {
       if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -160,10 +155,28 @@ public class MainActivity extends AppCompatActivity
     }
   }
 
+  private void SignOut() {
+    getSignInApplication().getSignInClient().signOut()
+        .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+          @Override
+          public void onComplete(@NonNull Task<Void> task) {
+            getSignInApplication().setSignInAccount(null);
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+          }
+        });
+  }
 
-  @Override
-  public void onSaveInstanceState(@NonNull Bundle outState) {
-    super.onSaveInstanceState(outState);
+  private SignInApplication getSignInApplication() {
+    return (SignInApplication) getApplication();
+  }
+
+  private void setupService() {
+    Retrofit retrofit = new Retrofit.Builder()
+        .baseUrl("https:api.sonicapi.com")
+        .addConverterFactory(SimpleXmlConverterFactory.create())
+        .build();
   }
 
 

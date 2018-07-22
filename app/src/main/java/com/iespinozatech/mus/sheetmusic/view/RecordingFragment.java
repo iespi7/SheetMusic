@@ -9,6 +9,7 @@ import android.media.MediaRecorder;
 import android.media.MediaRecorder.AudioSource;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
@@ -17,11 +18,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 import com.iespinozatech.mus.sheetmusic.R;
+import com.iespinozatech.mus.sheetmusic.model.Recording;
+import com.iespinozatech.mus.sheetmusic.model.RecordingDatabase;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,7 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Date;
-
+import java.util.List;
 
 
 public class RecordingFragment extends Fragment {
@@ -40,8 +45,8 @@ public class RecordingFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
       @Nullable Bundle savedInstanceState) {
-    return inflater.inflate(R.layout.fragment_record, container, false);
-
+    View root = inflater.inflate(R.layout.fragment_record, container, false);
+    return root;
   }
 
   private static final int SAMPLE_RATE = 44100;         // Set as appropriate
@@ -55,8 +60,9 @@ public class RecordingFragment extends Fragment {
 
   private File file = null;
   private boolean recording = false;
-  ListView recordingList;
-
+  private ListView recordingList;
+  private RecordingDatabase database;
+  private ArrayAdapter<Recording> adapter;
 
 
   @Override
@@ -65,7 +71,15 @@ public class RecordingFragment extends Fragment {
     Button record = view.findViewById(R.id.record_button);
     Button stop = view.findViewById(R.id.stop_button);
     Button erase = view.findViewById(R.id.delete_button);
-    ListView recordingList = view.findViewById(R.id.record_list);
+    recordingList = view.findViewById(R.id.record_list);
+    adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_checked);
+    recordingList.setAdapter(adapter);
+    recordingList.setOnItemClickListener(new OnItemClickListener() {
+      @Override
+      public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Toast.makeText(getContext(), "Converting", Toast.LENGTH_SHORT).show();
+      }
+    });
     record.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View v) {
@@ -73,7 +87,6 @@ public class RecordingFragment extends Fragment {
         startRecording();
       }
     });
-
 
     stop.setOnClickListener(new OnClickListener() {
       @Override
@@ -91,6 +104,7 @@ public class RecordingFragment extends Fragment {
         erase();
       }
     });
+    new GetRecordings().execute();
 
   }
 
@@ -116,30 +130,32 @@ public class RecordingFragment extends Fragment {
   }
 
 
-    private class Recorder extends Thread {
+  private class Recorder extends Thread {
 
-      @Override
-      public void run() {
-        try {
-          File external = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
-          File rawFile = new File(external, getString(R.string.raw_filename_format, new Date()));
-          // If you don't want wavFile to be public, then use internal in the next line.
-          File wavFile = new File(external, getString(R.string.wav_filename_format, new Date()));
-          recordRawAudio(rawFile);
-          writeWavFile(rawFile, wavFile);
-          MediaScannerConnection.scanFile(
-              getContext(), new String[] {wavFile.toString()}, null, null);
-          file = wavFile;
-          rawFile.delete();
-          new Runnable() {
-            @Override
-            public void run() {
-            }
-          };
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+    @Override
+    public void run() {
+      try {
+        File external = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+        File rawFile = new File(external, getString(R.string.raw_filename_format, new Date()));
+        // If you don't want wavFile to be public, then use internal in the next line.
+        File wavFile = new File(external, getString(R.string.wav_filename_format, new Date()));
+        long startTime = System.currentTimeMillis();
+        recordRawAudio(rawFile);
+        long finishTime = System.currentTimeMillis();
+        writeWavFile(rawFile, wavFile);
+        MediaScannerConnection.scanFile(
+            getContext(), new String[]{wavFile.toString()}, null, null);
+        file = wavFile;
+        rawFile.delete();
+        Recording recording = new Recording();
+        recording.setRecordingName(wavFile.getName());
+        recording.setRecordingLength(finishTime - startTime);
+        RecordingDatabase.getInstance(getContext()).getRecordingDao().insert(recording);
+        new GetRecordings().execute();
+       } catch (IOException e) {
+        throw new RuntimeException(e);
       }
+    }
 
     private void recordRawAudio(File rawFile) throws IOException {
       AudioRecord record = null;
@@ -154,7 +170,8 @@ public class RecordingFragment extends Fragment {
             AUDIO_FORMAT_CHANNELS[NUM_CHANNELS - 1], AudioFormat.ENCODING_PCM_16BIT,
             RECORD_BUFFER_MULTIPLIER * AudioRecord.getMinBufferSize(SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT));
-        while (record.getState() != AudioRecord.STATE_INITIALIZED) {}
+        while (record.getState() != AudioRecord.STATE_INITIALIZED) {
+        }
         record.startRecording();
         int readLength = 0;
         while (recording || readLength > 0) {
@@ -187,7 +204,8 @@ public class RecordingFragment extends Fragment {
             BITS_PER_SAMPLE_PER_CHANNEL
         );
         while (true) {
-          int readLength = input.read(xferBuffer, 0, Math.min(input.available(), xferBuffer.length));
+          int readLength = input
+              .read(xferBuffer, 0, Math.min(input.available(), xferBuffer.length));
           if (readLength <= 0) {
             break;
           } else {
@@ -199,9 +217,8 @@ public class RecordingFragment extends Fragment {
     }
 
 
-
     private void shortArrayToLEByteArray(short[] input, int readOffset, int readLength,
-    byte[] output, int writeOffset) {
+        byte[] output, int writeOffset) {
       for (int i = readOffset, j = writeOffset; i < readOffset + readLength; i++, j += 2) {
         output[j] = (byte) (input[i] & 0xff);
         output[j + 1] = (byte) ((input[i] >> 8) & 0xff);
@@ -210,7 +227,7 @@ public class RecordingFragment extends Fragment {
 
 
     private void writeWavHeader(OutputStream output, long rawDataLength, int format,
-    int channels, int sampleRate, int bitsPerSamplePerChannel) throws IOException {
+        int channels, int sampleRate, int bitsPerSamplePerChannel) throws IOException {
       long allDataLength = rawDataLength + 36;
       short bytesPerSample = (short) (channels * bitsPerSamplePerChannel / 8);
       int byteRate = sampleRate * bytesPerSample;
@@ -248,6 +265,20 @@ public class RecordingFragment extends Fragment {
       output.write(header);
     }
 
+  }
+
+  private class GetRecordings extends AsyncTask<Void, Void, List<Recording>> {
+
+    @Override
+    protected void onPostExecute(List<Recording> recordings) {
+      ArrayAdapter<Recording> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, recordings);
+      recordingList.setAdapter(adapter);
+    }
+
+    @Override
+    protected List<Recording> doInBackground(Void... voids) {
+      return RecordingDatabase.getInstance(getContext()).getRecordingDao().select();
+    }
   }
 
 }
