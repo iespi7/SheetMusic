@@ -18,7 +18,7 @@ supports portrait orientation only. The ultimate goal is to be able to provide s
 * Application only supports portrait orientation
 
 ### Installing
-* Click here for build instructions
+* Click [here](https://github.com/iespi7/SheetMusic/blob/master/docs/installation.md) for build instructions
 
 ### Using the App
 * Click here for instructions on how to use the app's current features
