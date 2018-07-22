@@ -21,7 +21,7 @@ supports portrait orientation only. The ultimate goal is to be able to provide s
 * Click [here](https://github.com/iespi7/SheetMusic/blob/master/docs/installation.md) for build instructions
 
 ### Using the App
-* Click here for instructions on how to use the app's current features
+* Click [here](https://github.com/iespi7/SheetMusic/blob/master/docs/instructions.md) for instructions on how to use the app's current features
 
 ## Tests
 Testing for this app has been completed on Google Pixel 2XL running on Oreo 8.1.0 (API 27). The minimum API version supported is Android 
